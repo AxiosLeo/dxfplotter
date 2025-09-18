@@ -109,6 +109,24 @@ add_executable(dxfplotter src/main.cpp)
 target_link_libraries(dxfplotter ${LINK_LIBRARIES})
 add_coverage(dxfplotter)
 
-install(TARGETS dxfplotter DESTINATION bin)
+# Add command-line converter
+add_executable(dxf_converter convert_dxf.cpp)
+target_link_libraries(dxf_converter
+    model
+    importer-dxf
+    exporter-gcode
+    exporter-dxfplot
+    exporter-renderer
+    geometry
+    geometry-filter
+    config
+    libdxfrw
+    fmt::fmt
+    Qt5::Core
+    Qt5::Gui
+    yaml-cpp
+)
+
+install(TARGETS dxfplotter dxf_converter DESTINATION bin)
 
 coverage_evaluate()
