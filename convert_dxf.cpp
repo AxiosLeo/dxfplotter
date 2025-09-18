@@ -58,12 +58,32 @@ int main(int argc, char *argv[])
         // Create document from layers
         model::Layer::ListUPtr layers;
         
+        std::cout << "DEBUG: Processing " << dxfImporter.layers().size() << " layers" << std::endl;
+        
         for (auto &importerLayer : dxfImporter.layers()) {
             model::Path::ListUPtr paths;
             
-            for (auto &polyline : importerLayer.polylines()) {
+            std::cout << "DEBUG: Layer '" << importerLayer.name() << "' has " 
+                      << importerLayer.polylinesWithAttributes().size() << " polylines" << std::endl;
+            
+            for (const auto &polyWithAttrs : importerLayer.polylinesWithAttributes()) {
+                std::cout << "DEBUG: Processing polyline with " << polyWithAttrs.attributes.size() << " attributes" << std::endl;
+                
+                // Print attributes for debugging
+                for (const auto& attr : polyWithAttrs.attributes) {
+                    std::cout << "DEBUG: Attribute: " << attr.first << " = " << attr.second << std::endl;
+                }
+                
                 model::PathSettings settings(40, 20, 50, 1); // default settings
-                auto path = std::make_unique<model::Path>(std::move(polyline), "", settings);
+                geometry::Polyline polylineCopy = polyWithAttrs.polyline; // Make a copy for move semantics
+                auto path = std::make_unique<model::Path>(std::move(polylineCopy), "", settings);
+                
+                // Apply attributes to the path
+                for (const auto& attr : polyWithAttrs.attributes) {
+                    std::cout << "DEBUG: Setting attribute " << attr.first << " = " << attr.second << std::endl;
+                    path->setAttribute(attr.first, attr.second);
+                }
+                
                 paths.push_back(std::move(path));
             }
             

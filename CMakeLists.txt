@@ -127,6 +127,19 @@ target_link_libraries(dxf_converter
     yaml-cpp
 )
 
+# Add attribute test program
+add_executable(test_attributes test_attributes.cpp)
+target_link_libraries(test_attributes
+    model
+    importer-dxf
+    exporter-dxfplot
+    geometry
+    config
+    libdxfrw
+    Qt5::Core
+    yaml-cpp
+)
+
 install(TARGETS dxfplotter dxf_converter DESTINATION bin)
 
 coverage_evaluate()

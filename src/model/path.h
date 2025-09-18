@@ -11,6 +11,8 @@
 #include <serializer/access.h>
 
 #include <QTransform>
+#include <map>
+#include <string>
 
 namespace model
 {
@@ -29,6 +31,7 @@ private:
 	PathSettings m_settings;
 	Layer *m_layer;
 	bool m_globallyVisible;
+	std::map<std::string, std::string> m_attributes;  // Store DXF attributes like "DN600", "钢管" etc.
 
 	void updateGlobalVisibility();
 
@@ -58,6 +61,12 @@ public:
 
 	const PathSettings &settings() const;
 	PathSettings &settings();
+
+	// Attribute access methods
+	const std::map<std::string, std::string>& attributes() const;
+	void setAttribute(const std::string& key, const std::string& value);
+	std::string getAttribute(const std::string& key) const;
+	bool hasAttribute(const std::string& key) const;
 
 	geometry::CuttingDirection cuttingDirection() const;
 

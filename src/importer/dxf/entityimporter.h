@@ -9,6 +9,8 @@
 #include <libdxfrw/drw_entities.h>
 
 #include <fmt/format.h>
+#include <map>
+#include <string>
 
 namespace importer::dxf
 {
@@ -28,6 +30,44 @@ protected:
 	const Settings &m_settings;
 
 	void addPolyline(const geometry::Polyline &polyline);
+	void addPolylineWithAttributes(const geometry::Polyline &polyline, const std::map<std::string, std::string> &attributes);
+	
+	// Extract attributes from DXF entity
+	template<typename Entity>
+	std::map<std::string, std::string> extractAttributes(const Entity &entity) const
+	{
+		std::map<std::string, std::string> attributes;
+		
+		// Extract extended data (XDATA)
+		for (const auto& extDataPtr : entity.extData) {
+			if (extDataPtr && extDataPtr->type() == DRW_Variant::STRING) {
+				// Try to parse common attribute patterns
+				std::string data = *(extDataPtr->content.s);
+				
+				// Look for diameter patterns like "DN600", "Φ600", "D600"
+				if (data.find("DN") == 0 || data.find("Φ") == 0 || data.find("D") == 0) {
+					attributes["diameter"] = data;
+				}
+				// Look for material patterns like "钢管", "铸铁", "PVC"
+				else if (data.find("管") != std::string::npos || 
+						 data.find("钢") != std::string::npos ||
+						 data.find("铸铁") != std::string::npos ||
+						 data.find("PVC") != std::string::npos ||
+						 data.find("PE") != std::string::npos) {
+					attributes["material"] = data;
+				}
+				// Store other text data as general attributes
+				else if (!data.empty()) {
+					attributes["text_" + std::to_string(attributes.size())] = data;
+				}
+			}
+		}
+		
+		// Also store layer name as an attribute
+		attributes["layer"] = entity.layer;
+		
+		return attributes;
+	}
 
 public:
 	explicit BaseEntityImporter(Layer &layer, const Settings &settings);
@@ -55,8 +95,9 @@ template <>
 inline void EntityImporter<DRW_Line>::operator()(const DRW_Line &line)
 {
 	const geometry::Bulge bulge(toVector2D(line.basePoint), toVector2D(line.secPoint), 0.0f);
+	auto attributes = extractAttributes(line);
 
-	addPolyline(geometry::Polyline({bulge}));
+	addPolylineWithAttributes(geometry::Polyline({bulge}), attributes);
 }
 
 template <>
@@ -281,6 +322,84 @@ inline void EntityImporter<DRW_Ellipse>::operator()(const DRW_Ellipse &ellipse)
 	}
 
 	addPolyline(polyline);
+}
+
+// Handle text entities - create a point at text position with text as attribute
+template <>
+inline void EntityImporter<DRW_Text>::operator()(const DRW_Text &text)
+{
+	const QVector2D pos(toVector2D(text.basePoint));
+	const geometry::Bulge bulge(pos, pos, 0.0f);
+	
+	// Extract attributes including the text content
+	auto attributes = extractAttributes(text);
+	
+	// Always add text content as attribute
+	std::string textContent = text.text;
+	attributes["text_content"] = textContent;
+	attributes["text_height"] = std::to_string(text.height);
+	attributes["text_style"] = text.style;
+	
+	// Debug output
+	std::cout << "DEBUG: Processing TEXT entity at (" << pos.x() << ", " << pos.y() << ")" << std::endl;
+	std::cout << "DEBUG: Text content: '" << textContent << "'" << std::endl;
+	std::cout << "DEBUG: Text length: " << textContent.length() << std::endl;
+	
+	// Parse text content for specific attributes
+	if (!textContent.empty()) {
+		// Look for diameter patterns like "DN600", "Φ600", "D600"
+		if (textContent.find("DN") == 0 || textContent.find("Φ") == 0 || textContent.find("D") == 0) {
+			attributes["diameter"] = textContent;
+		}
+		// Look for material patterns (using English for now due to encoding issues)
+		else if (textContent.find("Steel") != std::string::npos || 
+				 textContent.find("Iron") != std::string::npos ||
+				 textContent.find("PVC") != std::string::npos ||
+				 textContent.find("PE") != std::string::npos ||
+				 textContent.find("Pipe") != std::string::npos) {
+			attributes["material"] = textContent;
+		}
+		// For Chinese characters that might be encoded, store as raw text for now
+		attributes["raw_text"] = textContent;
+	}
+	
+	addPolylineWithAttributes(geometry::Polyline({bulge}), attributes);
+}
+
+template <>
+inline void EntityImporter<DRW_MText>::operator()(const DRW_MText &mtext)
+{
+	const QVector2D pos(toVector2D(mtext.basePoint));
+	const geometry::Bulge bulge(pos, pos, 0.0f);
+	
+	// Extract attributes including the text content
+	auto attributes = extractAttributes(mtext);
+	
+	// Always add text content as attribute
+	std::string textContent = mtext.text;
+	attributes["text_content"] = textContent;
+	attributes["text_height"] = std::to_string(mtext.height);
+	attributes["text_style"] = mtext.style;
+	
+	// Parse text content for specific attributes
+	if (!textContent.empty()) {
+		// Look for diameter patterns like "DN600", "Φ600", "D600"
+		if (textContent.find("DN") == 0 || textContent.find("Φ") == 0 || textContent.find("D") == 0) {
+			attributes["diameter"] = textContent;
+		}
+		// Look for material patterns (using English for now due to encoding issues)
+		else if (textContent.find("Steel") != std::string::npos || 
+				 textContent.find("Iron") != std::string::npos ||
+				 textContent.find("PVC") != std::string::npos ||
+				 textContent.find("PE") != std::string::npos ||
+				 textContent.find("Pipe") != std::string::npos) {
+			attributes["material"] = textContent;
+		}
+		// For Chinese characters that might be encoded, store as raw text for now
+		attributes["raw_text"] = textContent;
+	}
+	
+	addPolylineWithAttributes(geometry::Polyline({bulge}), attributes);
 }
 
 }
