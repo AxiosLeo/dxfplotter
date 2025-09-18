@@ -1,0 +1,14 @@
+# Simple converter build configuration
+add_executable(dxf_converter convert_dxf.cpp)
+
+target_include_directories(dxf_converter PRIVATE ${INCLUDE_DIRS})
+
+target_link_libraries(dxf_converter
+    model
+    importer-dxf
+    exporter-gcode
+    geometry
+    config
+    Qt5::Core
+    yaml-cpp
+)
