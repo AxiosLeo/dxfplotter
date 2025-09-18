@@ -151,11 +151,13 @@ void Interface::addSolid(const DRW_Solid& data)
 void Interface::addMText(const DRW_MText& data)
 {
 	PRINT_FUNC;
+	m_importer.processEntity(data);
 }
 
 void Interface::addText(const DRW_Text& data)
 {
 	PRINT_FUNC;
+	m_importer.processEntity(data);
 }
 
 void Interface::addDimAlign(const DRW_DimAligned *data)

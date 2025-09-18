@@ -6,6 +6,8 @@
 #include <serializer/renderable.h>
 
 #include <cereal/cereal.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/string.hpp>
 
 #include <model/path.h>
 
@@ -22,6 +24,7 @@ struct Access<model::Path>
 		archive(cereal::make_nvp("base_polyline", path.m_basePolyline));
 		archive(cereal::make_nvp("offsetted_path", path.m_offsettedPath));
 		archive(cereal::make_nvp("settings", path.m_settings));
+		archive(cereal::make_nvp("attributes", path.m_attributes));
 	}
 };
 

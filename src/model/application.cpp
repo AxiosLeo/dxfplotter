@@ -112,10 +112,26 @@ Task::UPtr Application::createTaskFromDxfImporter(const importer::dxf::Importer&
 	Layer::ListUPtr layers;
 	for (importer::dxf::Layer &importerLayer : importer.layers()) {
 		const std::string &layerName = importerLayer.name();
-		geometry::Polyline::List polylines = postProcessImportedPolylines(importerLayer.polylines());
-
-		// Create paths from merged and cleaned polylines of one layer
-		Path::ListUPtr children = Path::FromPolylines(std::move(polylines), defaultPathSettings(), layerName);
+		
+		// Create paths with attributes from polylines with attributes
+		Path::ListUPtr children;
+		for (const auto& polyWithAttrs : importerLayer.polylinesWithAttributes()) {
+			// Post-process individual polylines
+			geometry::Polyline::List singlePolyList = {polyWithAttrs.polyline};
+			geometry::Polyline::List processedPolylines = postProcessImportedPolylines(std::move(singlePolyList));
+			
+			// Create paths from processed polylines
+			for (auto& processedPolyline : processedPolylines) {
+				auto path = std::make_unique<Path>(std::move(processedPolyline), "", defaultPathSettings());
+				
+				// Apply attributes to the path
+				for (const auto& attr : polyWithAttrs.attributes) {
+					path->setAttribute(attr.first, attr.second);
+				}
+				
+				children.push_back(std::move(path));
+			}
+		}
 
 		layers.emplace_back(std::make_unique<Layer>(layerName, std::move(children)));
 	}

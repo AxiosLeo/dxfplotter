@@ -4,3 +4,4 @@ data/
 .cache/
 runtime/
 test_output/
+*.log

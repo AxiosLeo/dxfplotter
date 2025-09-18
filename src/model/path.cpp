@@ -161,5 +161,26 @@ bool Path::globallyVisible() const
 	return m_globallyVisible;
 }
 
+const std::map<std::string, std::string>& Path::attributes() const
+{
+	return m_attributes;
+}
+
+void Path::setAttribute(const std::string& key, const std::string& value)
+{
+	m_attributes[key] = value;
+}
+
+std::string Path::getAttribute(const std::string& key) const
+{
+	auto it = m_attributes.find(key);
+	return (it != m_attributes.end()) ? it->second : std::string();
+}
+
+bool Path::hasAttribute(const std::string& key) const
+{
+	return m_attributes.find(key) != m_attributes.end();
+}
+
 }
 
